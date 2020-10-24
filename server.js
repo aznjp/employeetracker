@@ -1,6 +1,6 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql2");
-const cTable = require("console.table");
+const Table = require("console.table");
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -28,6 +28,8 @@ function init() {
                 "View All Departments",
                 "View All Roles",
                 "View All Employees",
+                "View Employees by Manager",
+                "View Employees by Department",
                 "Add Department",
                 "Add Role",
                 "Add Employee",
@@ -52,6 +54,12 @@ function init() {
                         break;
                     case "View All Employees":
                         employeeTables();
+                        break;
+                    case "View Employees by Manager":
+                        employeeManagerTables();
+                        break;
+                    case "View Employees by Department":
+                        employeeDepartmentTables();
                         break;
                     case "Add Department":
                         addDepartment();
@@ -111,12 +119,63 @@ function employeeTables() {
     });
 };
 
+function employeeManagerTables() {
+    inquirer
+        .prompt({
+            type: "input",
+            message: "Under which managers do you wish to view employees?",
+            name: "managerId",
+            validate: function(number) {
+                if (isNaN(number)) {
+                    console.log("/n Please insert a valid number!")
+                    return false;
+                } else {
+                    return true;
+                }
+            }
+        })
+        .then(function(answer) {
+            let employeeManagerQuery = "SELECT * FROM employee WHERE manager_id = ?";
+            connection.query(employeeManagerQuery, [answer.managerId], function(err, res) {
+                if (err) throw new Error;
+                console.table(res);
+                init();
+            });
+        });
+};
+
+function employeeDepartmentTables() {
+    inquirer
+        .prompt({
+            type: "input",
+            message: "Under which department do you wish to view employees?",
+            name: "departmentName",
+
+        })
+        .then(function(answer) {
+            let employeeDeptQuery = "SELECT employee.first_name,employee.last_name,employee.role_id, employee.manager_id, department.name FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE name = ?";
+            connection.query(employeeDeptQuery, [answer.departmentName], function(err, res) {
+                if (err) throw new Error;
+                console.table(res);
+                init();
+            });
+        });
+}
+
 function addDepartment() {
     inquirer
         .prompt({
             type: "input",
             message: "What is the name of the department?",
-            name: "departmentName"
+            name: "departmentName",
+            validate: function(department) {
+                if (department.length >= 30) {
+                    console.log("/n Please insert a valid department!")
+                    return false;
+                } else {
+                    return true;
+                };
+            }
         })
         .then(function(answer) {
             connection.query("INSERT INTO department (name) VALUES (?)", [answer.departmentName],
@@ -136,6 +195,7 @@ function addRole() {
                 name: "role",
                 validate: function(role) {
                     if (role.length >= 30) {
+                        console.log("/n Please insert a valid role!")
                         return false;
                     } else {
                         return true;
@@ -145,12 +205,28 @@ function addRole() {
             {
                 type: "input",
                 message: "What is the salary for this role? (Number values only)",
-                name: "salary"
+                name: "salary",
+                validate: function(number) {
+                    if (isNaN(number)) {
+                        console.log("/n Please insert a valid number!")
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             },
             {
                 type: "input",
                 message: "What is the department id number? (Number values only)",
-                name: "departmentId"
+                name: "departmentId",
+                validate: function(number) {
+                    if (isNaN(number)) {
+                        console.log("/n Please insert a valid number!")
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             }
         ])
         .then(function(answer) {
@@ -173,6 +249,7 @@ function addEmployee() {
                 name: "firstName",
                 validate: function(name) {
                     if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
                         return false;
                     } else {
                         return true;
@@ -185,6 +262,7 @@ function addEmployee() {
                 name: "lastName",
                 validate: function(name) {
                     if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
                         return false;
                     } else {
                         return true;
@@ -194,7 +272,15 @@ function addEmployee() {
             {
                 type: "input",
                 message: "What is your role ID? (Number values only)",
-                name: "roleId"
+                name: "roleId",
+                validate: function(number) {
+                    if (isNaN(number)) {
+                        console.log("/n Please insert a valid number!")
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             },
             {
                 type: "input",
@@ -219,17 +305,41 @@ function updateEmployeeRole() {
         .prompt([{
                 type: "input",
                 message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
-                name: "firstNameUpdate"
+                name: "firstNameUpdate",
+                validate: function(name) {
+                    if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
+                        return false;
+                    } else {
+                        return true;
+                    };
+                }
             },
             {
                 type: "input",
                 message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
-                name: "lastNameUpdate"
+                name: "lastNameUpdate",
+                validate: function(name) {
+                    if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
+                        return false;
+                    } else {
+                        return true;
+                    };
+                }
             },
             {
                 type: "input",
                 message: "What is the updated role ID? (MUST BE INTEGER VALUE)",
-                name: "roleUpdate"
+                name: "roleUpdate",
+                validate: function(number) {
+                    if (isNaN(number)) {
+                        console.log("/n Please insert a valid number!")
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             }
         ])
         .then(function(answer) {
@@ -248,17 +358,41 @@ function updateEmployeeManager() {
         .prompt([{
                 type: "input",
                 message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
-                name: "firstNameUpdate"
+                name: "firstNameUpdate",
+                validate: function(name) {
+                    if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
+                        return false;
+                    } else {
+                        return true;
+                    };
+                }
             },
             {
                 type: "input",
                 message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
-                name: "lastNameUpdate"
+                name: "lastNameUpdate",
+                validate: function(name) {
+                    if (name.length >= 30) {
+                        console.log("/n Please insert a valid name!")
+                        return false;
+                    } else {
+                        return true;
+                    };
+                }
             },
             {
                 type: "input",
                 message: "What is the updated manager ID? (MUST BE INTEGER VALUE)",
-                name: "managerUpdate"
+                name: "managerUpdate",
+                validate: function(number) {
+                    if (isNaN(number)) {
+                        console.log("/n Please insert a valid number!")
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
             }
         ])
         .then(function(answer) {
@@ -278,6 +412,14 @@ function deleteEmployee() {
             type: "input",
             message: "Which employee do you wish to remove from the database? (USE employee ID number)",
             name: "removeEmployee",
+            validate: function(number) {
+                if (isNaN(number)) {
+                    console.log("/n Please insert a valid number!")
+                    return false;
+                } else {
+                    return true;
+                }
+            }
         })
         .then(function(answer) {
             // because there is no formal id for employee needed to reference object
