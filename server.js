@@ -103,6 +103,7 @@ function init() {
             })
 }
 
+/* ====================================== VIEW ================================================*/
 function departmentTables() {
     const departmentQuery = `SELECT department.name AS Department_Name,department.id AS Department_ID  
     FROM department
@@ -171,6 +172,8 @@ function employeeDepartmentTables() {
     })
 };
 
+
+/* ====================================== ADD ================================================*/
 function addDepartment() {
     inquirer
         .prompt({
@@ -317,6 +320,8 @@ function addEmployee() {
     });
 }
 
+
+/* ====================================== UPDATE ================================================*/
 function updateEmployeeRole() {
     // Initial search to get back to employee and make list of current managers and map them back to their id values
     const roleQuery = `SELECT role.id, role.title FROM role`;
@@ -395,6 +400,8 @@ function updateEmployeeManager() {
     })
 };
 
+
+/* ====================================== EXTRA ================================================*/
 function noManager() {
     const noManagerQuery = `SELECT * FROM employee`;
     connection.query(noManagerQuery, (err, res) => {
@@ -419,6 +426,8 @@ function noManager() {
     })
 }
 
+
+/* ====================================== DELETE ================================================*/
 function deleteEmployee() {
     const deleteEmployeeQuery = `SELECT * FROM employee`;
     connection.query(deleteEmployeeQuery, (err, res) => {
@@ -497,6 +506,7 @@ function deleteDepartment() {
         })
 }
 
+/* ====================================== EXTRA #2 ================================================*/
 function salaryTotal() {
     let salaries =
         `SELECT department.name AS Department,role.salary AS Salary 
@@ -510,7 +520,7 @@ function salaryTotal() {
     });
 };
 
-
+/* ====================================== END ================================================*/
 function endApplication() {
     // Ends the connection to the database
     connection.end();
