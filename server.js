@@ -35,6 +35,7 @@ function init() {
                 "Add Employee",
                 "Update Employee Role",
                 "Update Employee Manager",
+                "No Manager",
                 "View Salaries",
                 "Delete Employees",
                 "End Application"
@@ -75,6 +76,9 @@ function init() {
                         break;
                     case "Update Employee Manager":
                         updateEmployeeManager();
+                        break;
+                    case "No Manager":
+                        noManager();
                         break;
                     case "Delete Employees":
                         deleteEmployee();
@@ -341,56 +345,67 @@ function updateEmployeeRole() {
 };
 
 function updateEmployeeManager() {
-    // Initial search to get back to employee and make list of current managers and map them back to their id values
-    const managerQuery = `SELECT * FROM employee`;
-    connection.query(managerQuery, (err, res) => {
+    // Could have just referenced through the first query, but this makes it easier to read that it is also getting employee id
+    const employeeQuery = `SELECT * FROM employee`;
+    connection.query(employeeQuery, (err, res) => {
         if (err) throw new Error;
-        const managers = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+        const employee = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+
+        // Initial search to get back to employee and make list of current managers and map them back to their id values
+        const managerQuery = `SELECT * FROM employee`;
+        connection.query(managerQuery, (err, res) => {
+            if (err) throw new Error;
+            const managers = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+            inquirer
+                .prompt([{
+                        type: "list",
+                        message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
+                        name: "fullNameUpdate",
+                        choices: employee
+                    },
+                    {
+                        type: "list",
+                        message: "What is the updated manager ID?",
+                        name: "managerUpdate",
+                        choices: managers
+                    }
+                ])
+                .then(function(answer) {
+                    // Made update function to do it based on first and last name to specify each individual
+                    connection.query('UPDATE employee SET manager_id=? WHERE employee.id=?', [answer.managerUpdate, answer.fullNameUpdate],
+                        function(err, res) {
+                            if (err) throw new Error;
+                            console.table(res);
+                            init();
+                        });
+                });
+        })
+    })
+};
+
+function noManager() {
+    const noManagerQuery = `SELECT * FROM employee`;
+    connection.query(noManagerQuery, (err, res) => {
+        if (err) throw new Error;
+        const noManager = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
         inquirer
             .prompt([{
-                    type: "input",
-                    message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
-                    name: "firstNameUpdate",
-                    validate: function(name) {
-                        if (name.length >= 30) {
-                            console.log("/n Please insert a valid name!")
-                            return false;
-                        } else {
-                            return true;
-                        };
-                    }
-                },
-                {
-                    type: "input",
-                    message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
-                    name: "lastNameUpdate",
-                    validate: function(name) {
-                        if (name.length >= 30) {
-                            console.log("/n Please insert a valid name!")
-                            return false;
-                        } else {
-                            return true;
-                        };
-                    }
-                },
-                {
-                    type: "list",
-                    message: "What is the updated manager ID? )",
-                    name: "managerUpdate",
-                    choices: managers
-                }
-            ])
+                type: "list",
+                message: "Which employee has no manager?",
+                name: "noManager",
+                choices: noManager
+            }])
             .then(function(answer) {
-                // Made update function to do it based on first and last name to specify each individual
-                connection.query('UPDATE employee SET manager_id=? WHERE first_name=? AND last_name=?', [answer.managerUpdate, answer.firstNameUpdate, answer.lastNameUpdate],
+                connection.query('UPDATE employee SET manager_id = NULL WHERE employee.id =?', [answer.noManager],
                     function(err, res) {
                         if (err) throw new Error;
                         console.table(res);
                         init();
                     });
-            });
+            })
+
     })
-};
+}
 
 function deleteEmployee() {
     const deleteEmployeeQuery = `SELECT * FROM employee`;
