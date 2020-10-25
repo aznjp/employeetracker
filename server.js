@@ -231,7 +231,7 @@ function addRole() {
                     },
                     {
                         type: "list",
-                        message: "Which department will it be under?)",
+                        message: "Which department will it be under?",
                         choices: departments,
                         name: "departmentId"
                     }
@@ -332,13 +332,13 @@ function updateEmployeeRole() {
             inquirer
                 .prompt([{
                         type: "list",
-                        message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
+                        message: "Full Name of the employees information would you like to update?",
                         name: "fullNameUpdate",
                         choices: updateEmployee
                     },
                     {
                         type: "list",
-                        message: "What is the updated role ID? (MUST BE INTEGER VALUE)",
+                        message: "What is the updated role ID?",
                         name: "roleUpdate",
                         choices: roles
                     }
