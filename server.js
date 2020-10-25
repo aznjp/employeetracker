@@ -92,7 +92,8 @@ function init() {
 }
 
 function departmentTables() {
-    let departmentQuery = "SELECT * FROM department";
+    let departmentQuery = `SELECT department.name AS Department_Name,department.id AS Department_ID  
+    FROM department`;
     connection.query(departmentQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -101,7 +102,8 @@ function departmentTables() {
 };
 
 function roleTables() {
-    let roleQuery = "SELECT * FROM role";
+    let roleQuery = `SELECT  role.id AS Role_ID, role.title AS Job_Title, role.department_id AS Department_ID, role.salary AS Salary  
+    FROM role`;
     connection.query(roleQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -111,7 +113,13 @@ function roleTables() {
 
 function employeeTables() {
     // this should show all of the linking information of each employee to their titles, salaries and manager ID's
-    let employeeQuery = "SELECT * FROM employee INNER JOIN role ON employee.role_id = role.id";
+    let employeeQuery =
+        `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager
+    FROM employee
+    LEFT JOIN employee manager on manager.id = employee.manager_id
+    INNER JOIN role ON (role.id = employee.role_id)
+    INNER JOIN department ON (department.id = role.department_id)
+    ORDER BY employee.id;`;
     connection.query(employeeQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -120,47 +128,32 @@ function employeeTables() {
 };
 
 function employeeManagerTables() {
-    inquirer
-        .prompt({
-            type: "input",
-            message: "Under which managers do you wish to view employees?",
-            name: "managerId",
-            validate: function(number) {
-                if (isNaN(number)) {
-                    console.log("/n Please insert a valid number!")
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        })
-        .then(function(answer) {
-            let employeeManagerQuery = "SELECT * FROM employee WHERE manager_id = ?";
-            connection.query(employeeManagerQuery, [answer.managerId], function(err, res) {
-                if (err) throw new Error;
-                console.table(res);
-                init();
-            });
-        });
-};
+    let employeeManagerQuery =
+        `SELECT CONCAT(manager.first_name, ' ', manager.last_name) AS Manager, department.name AS Department, employee.id AS employee_id, employee.first_name, employee.last_name, role.title
+        FROM employee
+        LEFT JOIN employee manager on manager.id = employee.manager_id
+        INNER JOIN role ON (role.id = employee.role_id && employee.manager_id != 'NULL')
+        INNER JOIN department ON (department.id = role.department_id)
+        ORDER BY manager;`;
+    connection.query(employeeManagerQuery, function(err, res) {
+        if (err) throw new Error;
+        console.table(res);
+        init();
+    });
+}
 
 function employeeDepartmentTables() {
-    inquirer
-        .prompt({
-            type: "input",
-            message: "Under which department do you wish to view employees?",
-            name: "departmentName",
 
-        })
-        .then(function(answer) {
-            let employeeDeptQuery = "SELECT employee.first_name,employee.last_name,employee.role_id, employee.manager_id, department.name FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE name = ?";
-            connection.query(employeeDeptQuery, [answer.departmentName], function(err, res) {
-                if (err) throw new Error;
-                console.table(res);
-                init();
-            });
-        });
-}
+    let employeeDeptQuery = `SELECT employee.first_name,employee.last_name,role.title AS Job_title, employee.manager_id AS Manager_ID, department.name AS Department
+    FROM employee 
+    INNER JOIN role ON employee.role_id = role.id 
+    INNER JOIN department ON role.department_id = department.id`;
+    connection.query(employeeDeptQuery, function(err, res) {
+        if (err) throw new Error;
+        console.table(res);
+        init();
+    })
+};
 
 function addDepartment() {
     inquirer
@@ -188,119 +181,128 @@ function addDepartment() {
 };
 
 function addRole() {
-    inquirer
-        .prompt([{
-                type: "input",
-                message: "What's the name of the role? (30 Characters MAX)",
-                name: "role",
-                validate: function(role) {
-                    if (role.length >= 30) {
-                        console.log("/n Please insert a valid role!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "What is the salary for this role? (Number values only)",
-                name: "salary",
-                validate: function(number) {
-                    if (isNaN(number)) {
-                        console.log("/n Please insert a valid number!")
-                        return false;
-                    } else {
-                        return true;
+    let deptQuery = `SELECT * FROM department`
+    connection.query(deptQuery,
+        function(err, res) {
+            if (err) throw new Error;
+            const departments = res.map(({ id, name }) => ({ name: name, value: id }));
+            inquirer
+                .prompt([{
+                        type: "input",
+                        message: "What's the name of the role? (30 Characters MAX)",
+                        name: "role",
+                        validate: function(role) {
+                            if (role.length >= 30) {
+                                console.log("/n Please insert a valid role!")
+                                return false;
+                            } else {
+                                return true;
+                            };
+                        }
+                    },
+                    {
+                        type: "input",
+                        message: "What is the salary for this role? (Number values only)",
+                        name: "salary",
+                        validate: function(number) {
+                            if (isNaN(number)) {
+                                console.log("/n Please insert a valid number!")
+                                return false;
+                            } else {
+                                return true;
+                            }
+                        }
+                    },
+                    {
+                        type: "list",
+                        message: "Which department will it be under?)",
+                        choices: departments,
+                        name: "departmentId"
                     }
-                }
-            },
-            {
-                type: "input",
-                message: "What is the department id number? (Number values only)",
-                name: "departmentId",
-                validate: function(number) {
-                    if (isNaN(number)) {
-                        console.log("/n Please insert a valid number!")
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }
-            }
-        ])
-        .then(function(answer) {
+                ])
+                .then(function(answer) {
 
 
-            connection.query("INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)", [answer.role, answer.salary, answer.departmentId],
-                function(err, res) {
-                    if (err) throw new Error;
-                    console.table(res);
-                    init();
+                    connection.query("INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)", [answer.role, answer.salary, answer.departmentId],
+                        function(err, res) {
+                            if (err) throw new Error;
+                            console.table(res);
+                            init();
+                        });
                 });
         });
-};
+}
 
 function addEmployee() {
-    inquirer
-        .prompt([{
-                type: "input",
-                message: "What is your first name? (30 Characters MAX)",
-                name: "firstName",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "What is your last name? (30 Characters MAX)",
-                name: "lastName",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "What is your role ID? (Number values only)",
-                name: "roleId",
-                validate: function(number) {
-                    if (isNaN(number)) {
-                        console.log("/n Please insert a valid number!")
-                        return false;
-                    } else {
-                        return true;
+    // Initial search to get back to roles and make list of current job titles and map them back to their id values
+    const roleQuery = `SELECT role.id, role.title FROM role`;
+    connection.query(roleQuery, (err, res) => {
+        if (err) throw new Error;
+        const roles = res.map(({ id, title }) => ({ name: title, value: id }));
+
+        // Initial search to get back to employee and make list of current managers and map them back to their id values
+        const managerQuery = `SELECT * FROM employee`;
+        connection.query(managerQuery, (err, res) => {
+            if (err) throw new Error;
+            const managers = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+
+            // Will then prompt back to the initial prompt questions for this function
+            inquirer
+                .prompt([{
+                        type: "input",
+                        message: "What is your first name? (30 Characters MAX)",
+                        name: "firstName",
+                        validate: function(name) {
+                            if (name.length >= 30) {
+                                console.log("/n Please insert a valid name!")
+                                return false;
+                            } else {
+                                return true;
+                            };
+                        }
+                    },
+                    {
+                        type: "input",
+                        message: "What is your last name? (30 Characters MAX)",
+                        name: "lastName",
+                        validate: function(name) {
+                            if (name.length >= 30) {
+                                console.log("/n Please insert a valid name!")
+                                return false;
+                            } else {
+                                return true;
+                            };
+                        }
+                    },
+                    {
+                        type: "list",
+                        message: "What is your role?",
+                        name: "roleId",
+                        choices: roles
+                    },
+                    {
+                        type: "list",
+                        message: "What is your manager name?",
+                        name: "managerId",
+                        choices: managers
                     }
-                }
-            },
-            {
-                type: "input",
-                message: "What is your manager ID? (Number values only)",
-                name: "managerId"
-            }
-        ])
-        .then(function(answer) {
-            // This is utilized to insert the employee information based on the rows for the first and last name, 
-            // their role id values, and the manager values (which can be null if they are the boss)
-            connection.query("INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [answer.firstName, answer.lastName, answer.roleId, answer.managerId],
-                function(err, res) {
-                    if (err) throw new Error;
-                    console.table(res);
-                    init();
-                })
-        });
-};
+                ])
+                .then(function(answer) {
+                    // This is utilized to insert the employee information based on the rows for the first and last name, 
+                    // their role id values, and the manager values (which can be null if they are the boss)
+                    connection.query("INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [answer.firstName, answer.lastName, answer.roleId, answer.managerId],
+                        function(err, res) {
+                            if (err) throw new Error;
+                            console.table(res);
+                            init();
+                        })
+                });
+        })
+    });
+}
 
 function updateEmployeeRole() {
+
     inquirer
         .prompt([{
                 type: "input",
@@ -354,86 +356,88 @@ function updateEmployeeRole() {
 };
 
 function updateEmployeeManager() {
-    inquirer
-        .prompt([{
-                type: "input",
-                message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
-                name: "firstNameUpdate",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
-                name: "lastNameUpdate",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "What is the updated manager ID? (MUST BE INTEGER VALUE)",
-                name: "managerUpdate",
-                validate: function(number) {
-                    if (isNaN(number)) {
-                        console.log("/n Please insert a valid number!")
-                        return false;
-                    } else {
-                        return true;
+    // Initial search to get back to employee and make list of current managers and map them back to their id values
+    const managerQuery = `SELECT * FROM employee`;
+    connection.query(managerQuery, (err, res) => {
+        if (err) throw new Error;
+        const managers = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+        inquirer
+            .prompt([{
+                    type: "input",
+                    message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
+                    name: "firstNameUpdate",
+                    validate: function(name) {
+                        if (name.length >= 30) {
+                            console.log("/n Please insert a valid name!")
+                            return false;
+                        } else {
+                            return true;
+                        };
                     }
+                },
+                {
+                    type: "input",
+                    message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
+                    name: "lastNameUpdate",
+                    validate: function(name) {
+                        if (name.length >= 30) {
+                            console.log("/n Please insert a valid name!")
+                            return false;
+                        } else {
+                            return true;
+                        };
+                    }
+                },
+                {
+                    type: "list",
+                    message: "What is the updated manager ID? )",
+                    name: "managerUpdate",
+                    choices: managers
                 }
-            }
-        ])
-        .then(function(answer) {
-            // Made update function to do it based on first and last name to specify each individual
-            connection.query('UPDATE employee SET manager_id=? WHERE first_name=? AND last_name=?', [answer.managerUpdate, answer.firstNameUpdate, answer.lastNameUpdate],
-                function(err, res) {
-                    if (err) throw new Error;
-                    console.table(res);
-                    init();
-                });
-        });
+            ])
+            .then(function(answer) {
+                // Made update function to do it based on first and last name to specify each individual
+                connection.query('UPDATE employee SET manager_id=? WHERE first_name=? AND last_name=?', [answer.managerUpdate, answer.firstNameUpdate, answer.lastNameUpdate],
+                    function(err, res) {
+                        if (err) throw new Error;
+                        console.table(res);
+                        init();
+                    });
+            });
+    })
 };
 
 function deleteEmployee() {
-    inquirer
-        .prompt({
-            type: "input",
-            message: "Which employee do you wish to remove from the database? (USE employee ID number)",
-            name: "removeEmployee",
-            validate: function(number) {
-                if (isNaN(number)) {
-                    console.log("/n Please insert a valid number!")
-                    return false;
-                } else {
-                    return true;
-                }
-            }
-        })
-        .then(function(answer) {
-            // because there is no formal id for employee needed to reference object
-            connection.query('DELETE FROM employee WHERE ?', { id: answer.removeEmployee },
-                function(err, res) {
-                    if (err) throw new Error;
-                    console.table(res);
-                    init();
-                });
-        });
-};
+    const deleteEmployeeQuery = `SELECT * FROM employee`;
+    connection.query(deleteEmployeeQuery, (err, res) => {
+        if (err) throw new Error;
+        const deleteEmployees = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+        inquirer
+            .prompt({
+                type: "list",
+                message: "Which employee do you wish to remove from the database? (USE employee ID number)",
+                name: "removeEmployee",
+                choices: deleteEmployees
+
+            })
+            .then(function(answer) {
+                // because there is no formal id for employee needed to reference object
+                connection.query('DELETE FROM employee WHERE ?', { id: answer.removeEmployee },
+                    function(err, res) {
+                        if (err) throw new Error;
+                        console.table(res);
+                        init();
+                    });
+            });
+    });
+}
 
 function salaryTotal() {
-    let salaries = "SELECT name,salary FROM role LEFT JOIN department ON role.department_id = department.id"
+    let salaries =
+        `SELECT name,salary 
+    FROM role 
+    LEFT JOIN department 
+    ON role.department_id = department.id`
     connection.query(salaries, function(err, res) {
         if (err) throw new Error;
         console.table(res);
