@@ -302,57 +302,42 @@ function addEmployee() {
 }
 
 function updateEmployeeRole() {
+    // Initial search to get back to employee and make list of current managers and map them back to their id values
+    const roleQuery = `SELECT role.id, role.title FROM role`;
+    connection.query(roleQuery, (err, res) => {
+        if (err) throw new Error;
+        const roles = res.map(({ id, title }) => ({ name: title, value: id }));
 
-    inquirer
-        .prompt([{
-                type: "input",
-                message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
-                name: "firstNameUpdate",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "Last Name of the employees information would you like to update?(USE LAST NAME)",
-                name: "lastNameUpdate",
-                validate: function(name) {
-                    if (name.length >= 30) {
-                        console.log("/n Please insert a valid name!")
-                        return false;
-                    } else {
-                        return true;
-                    };
-                }
-            },
-            {
-                type: "input",
-                message: "What is the updated role ID? (MUST BE INTEGER VALUE)",
-                name: "roleUpdate",
-                validate: function(number) {
-                    if (isNaN(number)) {
-                        console.log("/n Please insert a valid number!")
-                        return false;
-                    } else {
-                        return true;
+        const fullNameQuery = `SELECT * FROM employee`;
+        connection.query(fullNameQuery, (err, res) => {
+            if (err) throw new Error;
+            const updateEmployee = res.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+
+            inquirer
+                .prompt([{
+                        type: "list",
+                        message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
+                        name: "fullNameUpdate",
+                        choices: updateEmployee
+                    },
+                    {
+                        type: "list",
+                        message: "What is the updated role ID? (MUST BE INTEGER VALUE)",
+                        name: "roleUpdate",
+                        choices: roles
                     }
-                }
-            }
-        ])
-        .then(function(answer) {
-            // Made update function to do it based on first and last name to specify each individual
-            connection.query('UPDATE employee SET role_id=? WHERE first_name=? AND last_name=?', [answer.roleUpdate, answer.firstNameUpdate, answer.lastNameUpdate],
-                function(err, res) {
-                    if (err) throw new Error;
-                    console.table(res);
-                    init();
+                ])
+                .then(function(answer) {
+                    // Made update function to do it based on first and last name to specify each individual
+                    connection.query('UPDATE employee SET role_id=? WHERE employee.id = ?', [answer.roleUpdate, answer.fullNameUpdate],
+                        function(err, res) {
+                            if (err) throw new Error;
+                            console.table(res);
+                            init();
+                        });
                 });
-        });
+        })
+    })
 };
 
 function updateEmployeeManager() {
