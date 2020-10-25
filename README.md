@@ -31,7 +31,7 @@ The application will first begin with a series of questions as shown below
 
 The application will then be able to view, update, delete and add information to different tables within the database. (Table scheme is shown below)
 
-![Employee Tracker2](./assets/images/screenshot2.PNG)
+![Employee Tracker2](./assets/images/screenshot2.png)
 
 To see a demonstration to the application run click on the image below
 
