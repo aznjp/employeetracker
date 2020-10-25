@@ -29,12 +29,13 @@ The application will first begin with a series of questions as shown below
 
 ![Employee Tracker](./assets/images/screenshot1.PNG)
 
-The application will then be able to view, update, delete and add information to different tables within the database.
+The application will then be able to view, update, delete and add information to different tables within the database. (Table scheme is shown below)
 
 ![Employee Tracker](./assets/images/screenshot2.PNG)
 
-To see a demonstration to the application run look at the video below
-![Employee Tracker](./assets/images/video.mp4)
+To see a demonstration to the application run click on the image below
+
+[![Employee Tracker](http://img.youtube.com/vi/jCYn_GqvwLg/0.jpg)](http://www.youtube.com/watch?v=jCYn_GqvwLg "https://miro.medium.com/max/1200/1*Oe7xavCj5qCBzwTbLDbPTg.jpeg")
 
 ## License
 MIT  
