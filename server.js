@@ -2,6 +2,10 @@ const inquirer = require("inquirer");
 const mysql = require("mysql2");
 const Table = require("console.table");
 
+// NOTE TO SELF: REFACTOR THE CODE WHENVER YOU HAVE THE CHANCE SO THAT IT ISNT SO MESSY
+
+
+
 const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -116,8 +120,9 @@ function departmentTables() {
 };
 
 function roleTables() {
-    const roleQuery = `SELECT role.id AS Role_ID, role.title AS Job_Title, role.department_id AS Department_ID, role.salary AS Salary  
+    const roleQuery = `SELECT role.id AS Role_ID, role.title AS Job_Title, department.name AS Department, role.salary AS Salary  
     FROM role
+    INNER JOIN department ON (department.id = role.department_id)
     ORDER BY role.id`;
     connection.query(roleQuery, function(err, res) {
         if (err) throw new Error;
@@ -349,7 +354,6 @@ function updateEmployeeRole() {
                     }
                 ])
                 .then(function(answer) {
-                    // Made update function to do it based on first and last name to specify each individual
                     connection.query('UPDATE employee SET role_id=? WHERE employee.id = ?', [answer.roleUpdate, answer.fullNameUpdate],
                         function(err, res) {
                             if (err) throw new Error;
@@ -376,19 +380,18 @@ function updateEmployeeManager() {
             inquirer
                 .prompt([{
                         type: "list",
-                        message: "First Name of the employees information would you like to update?(USE FIRST NAME)",
+                        message: "Full Name of the employees information would you like to update?",
                         name: "fullNameUpdate",
                         choices: employee
                     },
                     {
                         type: "list",
-                        message: "What is the updated manager ID?",
+                        message: "What is the updated manager name?",
                         name: "managerUpdate",
                         choices: managers
                     }
                 ])
                 .then(function(answer) {
-                    // Made update function to do it based on first and last name to specify each individual
                     connection.query('UPDATE employee SET manager_id=? WHERE employee.id=?', [answer.managerUpdate, answer.fullNameUpdate],
                         function(err, res) {
                             if (err) throw new Error;
@@ -442,7 +445,6 @@ function deleteEmployee() {
 
             })
             .then(function(answer) {
-                // because there is no formal id for employee needed to reference object
                 connection.query('DELETE FROM employee WHERE ?', { id: answer.removeEmployee },
                     function(err, res) {
                         if (err) throw new Error;
@@ -461,13 +463,12 @@ function deleteRole() {
         inquirer
             .prompt({
                 type: "list",
-                message: "Which employee do you wish to remove from the database?",
+                message: "Which role do you wish to delete from the database?",
                 name: "removeRole",
                 choices: deleteRoles
 
             })
             .then(function(answer) {
-                // because there is no formal id for employee needed to reference object
                 connection.query('DELETE FROM role WHERE ?', { id: answer.removeRole },
                     function(err, res) {
                         if (err) throw new Error;
@@ -489,13 +490,12 @@ function deleteDepartment() {
             inquirer
                 .prompt({
                     type: "list",
-                    message: "Which employee do you wish to remove from the database?",
+                    message: "Which department do you wish to remove from the database?",
                     name: "removeDepartment",
                     choices: deleteDepartment
 
                 })
                 .then(function(answer) {
-                    // because there is no formal id for employee needed to reference object
                     connection.query('DELETE FROM department WHERE ?', { id: answer.removeDepartment },
                         function(err, res) {
                             if (err) throw new Error;
