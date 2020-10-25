@@ -38,6 +38,8 @@ function init() {
                 "No Manager",
                 "View Salaries",
                 "Delete Employees",
+                "Delete Role",
+                "Delete Department",
                 "End Application"
 
             ],
@@ -83,6 +85,12 @@ function init() {
                     case "Delete Employees":
                         deleteEmployee();
                         break;
+                    case "Delete Role":
+                        deleteRole();
+                        break;
+                    case "Delete Department":
+                        deleteDepartment();
+                        break;
                     case "View Salaries":
                         salaryTotal();
                         break;
@@ -96,8 +104,9 @@ function init() {
 }
 
 function departmentTables() {
-    let departmentQuery = `SELECT department.name AS Department_Name,department.id AS Department_ID  
-    FROM department`;
+    const departmentQuery = `SELECT department.name AS Department_Name,department.id AS Department_ID  
+    FROM department
+    ORDER BY department.id`;
     connection.query(departmentQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -106,8 +115,9 @@ function departmentTables() {
 };
 
 function roleTables() {
-    let roleQuery = `SELECT  role.id AS Role_ID, role.title AS Job_Title, role.department_id AS Department_ID, role.salary AS Salary  
-    FROM role`;
+    const roleQuery = `SELECT role.id AS Role_ID, role.title AS Job_Title, role.department_id AS Department_ID, role.salary AS Salary  
+    FROM role
+    ORDER BY role.id`;
     connection.query(roleQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -117,8 +127,8 @@ function roleTables() {
 
 function employeeTables() {
     // this should show all of the linking information of each employee to their titles, salaries and manager ID's
-    let employeeQuery =
-        `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager
+    const employeeQuery =
+        `SELECT employee.id AS EmployeeID, CONCAT(employee.first_name," ", employee.last_name) AS Name, role.title AS Job_Title, department.name AS Department, role.salary as Salary, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager
     FROM employee
     LEFT JOIN employee manager on manager.id = employee.manager_id
     INNER JOIN role ON (role.id = employee.role_id)
@@ -132,8 +142,8 @@ function employeeTables() {
 };
 
 function employeeManagerTables() {
-    let employeeManagerQuery =
-        `SELECT CONCAT(manager.first_name, ' ', manager.last_name) AS Manager, department.name AS Department, employee.id AS employee_id, employee.first_name, employee.last_name, role.title
+    const employeeManagerQuery =
+        `SELECT CONCAT(manager.first_name, ' ', manager.last_name) AS Manager, department.name AS Department, employee.id AS Employee_id, CONCAT(employee.first_name," ",employee.last_name) AS Name, role.title AS Job_Title
         FROM employee
         LEFT JOIN employee manager on manager.id = employee.manager_id
         INNER JOIN role ON (role.id = employee.role_id && employee.manager_id != 'NULL')
@@ -148,10 +158,12 @@ function employeeManagerTables() {
 
 function employeeDepartmentTables() {
 
-    let employeeDeptQuery = `SELECT employee.first_name,employee.last_name,role.title AS Job_title, employee.manager_id AS Manager_ID, department.name AS Department
-    FROM employee 
+    const employeeDeptQuery = `SELECT department.name AS Department, CONCAT(employee.first_name," ", employee.last_name) AS Name, role.title AS Job_title, CONCAT(manager.first_name, ' ', manager.last_name) AS Manager
+    FROM employee
+    LEFT JOIN employee manager on manager.id = employee.manager_id
     INNER JOIN role ON employee.role_id = role.id 
-    INNER JOIN department ON role.department_id = department.id`;
+    INNER JOIN department ON role.department_id = department.id
+    ORDER BY department`;
     connection.query(employeeDeptQuery, function(err, res) {
         if (err) throw new Error;
         console.table(res);
@@ -185,7 +197,7 @@ function addDepartment() {
 };
 
 function addRole() {
-    let deptQuery = `SELECT * FROM department`
+    const deptQuery = `SELECT * FROM department`
     connection.query(deptQuery,
         function(err, res) {
             if (err) throw new Error;
@@ -415,7 +427,7 @@ function deleteEmployee() {
         inquirer
             .prompt({
                 type: "list",
-                message: "Which employee do you wish to remove from the database? (USE employee ID number)",
+                message: "Which employee do you wish to remove from the database?",
                 name: "removeEmployee",
                 choices: deleteEmployees
 
@@ -432,9 +444,62 @@ function deleteEmployee() {
     });
 }
 
+function deleteRole() {
+    const deleteRoleQuery = `SELECT role.id, role.title FROM role`;
+    connection.query(deleteRoleQuery, (err, res) => {
+        if (err) throw new Error;
+        const deleteRoles = res.map(({ id, title }) => ({ name: title, value: id }));
+        inquirer
+            .prompt({
+                type: "list",
+                message: "Which employee do you wish to remove from the database?",
+                name: "removeRole",
+                choices: deleteRoles
+
+            })
+            .then(function(answer) {
+                // because there is no formal id for employee needed to reference object
+                connection.query('DELETE FROM role WHERE ?', { id: answer.removeRole },
+                    function(err, res) {
+                        if (err) throw new Error;
+                        console.table(res);
+                        init();
+                    });
+            });
+
+    })
+}
+
+
+function deleteDepartment() {
+    const deleteDeptQuery = `SELECT * FROM department`
+    connection.query(deleteDeptQuery,
+        function(err, res) {
+            if (err) throw new Error;
+            const deleteDepartment = res.map(({ id, name }) => ({ name: name, value: id }));
+            inquirer
+                .prompt({
+                    type: "list",
+                    message: "Which employee do you wish to remove from the database?",
+                    name: "removeDepartment",
+                    choices: deleteDepartment
+
+                })
+                .then(function(answer) {
+                    // because there is no formal id for employee needed to reference object
+                    connection.query('DELETE FROM department WHERE ?', { id: answer.removeDepartment },
+                        function(err, res) {
+                            if (err) throw new Error;
+                            console.table(res);
+                            init();
+                        });
+                });
+        })
+}
+
 function salaryTotal() {
     let salaries =
-        `SELECT name,salary 
+        `SELECT department.name AS Department,role.salary AS Salary 
     FROM role 
     LEFT JOIN department 
     ON role.department_id = department.id`
